@@ -8,7 +8,7 @@ default_p_min = 0.01
 default_p_max = 0.06
 default_amount_x = 10_000_000.0
 default_x_out = 9_000_000.0
-total_supply_x = 1_000_000_000  # For market cap calculation
+total_supply_x = 1_000_000_000  # Market cap base
 
 st.header("1️⃣ Initialize Liquidity Position")
 
@@ -33,7 +33,7 @@ else:
         x_start = L * (1 / sqrt_p - 1 / sqrt_p_max)
         y_start = L * (sqrt_p - sqrt_p_min)
 
-        # Current market price
+        # Initial price and market cap
         price = p_current
         market_cap = price * total_supply_x
 
@@ -87,22 +87,30 @@ else:
             sqrt_p_new = 1 / inv_sqrt_p_new
             y_new = L * (sqrt_p_new - sqrt_p_min)
             y_in = y_new - y_reserve
-            return x_new, y_new, sqrt_p_new, y_in
+            p_new = sqrt_p_new**2
+            return x_new, y_new, sqrt_p_new, y_in, p_new
 
+        # --- Execute and Show Each Buy ---
         y_in_total = 0
-        for i, buy in enumerate([buy1, buy2, buy3], 1):
-            if buy > x_temp:
-                st.warning(f"⚠️ Buy {i} exceeds available X.")
-                break
-            x_temp, y_temp, sqrt_p_temp, y_in = apply_buy(x_temp, y_temp, sqrt_p_temp, buy)
-            y_in_total += y_in
+        buys = [("Buy 1", buy1), ("Buy 2", buy2), ("Buy 3", buy3)]
 
+        for label, buy in buys:
+            if buy > x_temp:
+                st.warning(f"⚠️ {label} exceeds available Token X.")
+                break
+            x_temp, y_temp, sqrt_p_temp, y_in, p_new = apply_buy(x_temp, y_temp, sqrt_p_temp, buy)
+            y_in_total += y_in
+            st.subheader(f"📌 {label} Result")
+            st.write(f"🔹 Y Required: {y_in:,.2f}")
+            st.write(f"🔹 Price After {label}: {p_new:.5f}")
+
+        # --- Summary ---
         final_price = sqrt_p_temp**2
         final_market_cap = final_price * total_supply_x
 
-        st.subheader("📊 Result After 3 Sequential Buys")
-        st.write(f"🪙 Final Token X: {x_temp:,.2f}")
-        st.write(f"💸 Final Token Y: {y_temp:,.2f}")
+        st.subheader("📊 Final Summary After 3 Buys")
+        st.write(f"🪙 Final Token X in Pool: {x_temp:,.2f}")
+        st.write(f"💸 Final Token Y in Pool: {y_temp:,.2f}")
         st.write(f"✅ Final Price: {final_price:.5f}")
         st.write(f"🏦 Final Market Cap: {final_market_cap:,.2f}")
         st.write(f"🧾 Total Y Spent: {y_in_total:,.2f}")
